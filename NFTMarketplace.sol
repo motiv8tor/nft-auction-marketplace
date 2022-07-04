@@ -31,6 +31,11 @@ contract NFTMarketplace {
         address nftHighestBidder;
         address nftSeller;
     }
+    
+    event End(uint256 indexed tokenId, address bidder, uint256 price);
+    event Cancel(uint256 indexed tokenId, address owner);
+    event Bid(uint256 indexed tokenId, address indexed sender, uint256 amount);
+
 
     
 
@@ -189,7 +194,7 @@ contract NFTMarketplace {
         nftAuctions[_tokenId].buyNowPrice = 0;
         nftAuctions[_tokenId].auctionEnd = 0;
         nftAuctions[_tokenId].nftSeller = address(0);
-
+        
        
     }
 
@@ -261,7 +266,7 @@ contract NFTMarketplace {
         nftAuctions[_tokenId].nftHighestBid = msg.value;
         if (nftAuctions[_tokenId].auctionEnd < block.timestamp + 10 minutes)
             nftAuctions[_tokenId].auctionEnd = block.timestamp + 10 minutes;
-
+        emit Bid(_tokenId, msg.sender, msg.value)
        
     }
 
@@ -285,7 +290,7 @@ contract NFTMarketplace {
             10;
         nftAuctions[_tokenId].nftHighestBidder = address(0);
         nftAuctions[_tokenId].nftHighestBid = 0;
-
+        emit Cancel(_tokenId, address(0));
       
     }
 
