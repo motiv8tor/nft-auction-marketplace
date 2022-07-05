@@ -30,6 +30,7 @@ contract NFTCollection is ERC721, ERC721Enumerable {
         return super.supportsInterface(interfaceId);
     }
 
+    // return URI of "tokenId"
     function tokenURI(uint256 tokenId)
         public
         view
@@ -43,11 +44,12 @@ contract NFTCollection is ERC721, ERC721Enumerable {
         return _tokenIdToTokenURI[tokenId];
     }
 
+    // mint a new NFT
     function safeMint(string memory _tokenURI, uint256 _royalty) public {
         require(!_tokenURIExists[_tokenURI], "The token URI should be unique");
         require(
             _royalty <= 1000 && _royalty >= 0,
-            "Royalty can not exceed 10% or negative"
+            "Royalty can not exceed 1000 or negative"
         );
         tokenURIs.push(_tokenURI);
         uint256 _id = tokenURIs.length;
@@ -58,10 +60,12 @@ contract NFTCollection is ERC721, ERC721Enumerable {
         _tokenURIExists[_tokenURI] = true;
     }
 
+    // return royalty of "tokenId"
     function royalty(uint256 tokenId) external view returns (uint256) {
         return _tokenIdToTokenRoyalty[tokenId];
     }
 
+    // return address of "tokenId"
     function inventor(uint256 tokenId) external view returns (address) {
         return _tokenIdToTokenInventor[tokenId];
     }
