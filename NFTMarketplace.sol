@@ -32,10 +32,6 @@ contract NFTMarketplace {
         address nftSeller;
     }
 
-    
-
-   
-
     constructor(address _nftCollection) {
         nftCollection = NFTCollection(_nftCollection);
         _owner = msg.sender;
@@ -46,6 +42,7 @@ contract NFTMarketplace {
         _;
     }
 
+    // transfer NFT with "tokenId" to market
     function _marketTransfer(
         uint256 _price,
         uint256 _tokenId,
@@ -55,25 +52,26 @@ contract NFTMarketplace {
         uint256 royalty = nftCollection.royalty(_tokenId);
         address inventor = nftCollection.inventor(_tokenId);
         userFunds[_owner] += (_price * marketFee) / 10000;
-        uint256 roayltyFund = (_price * royalty) / 10000;
+        uint256 royaltyFund = (_price * royalty) / 10000;
         uint256 loan = ((donationLimit - donations[_tokenId]) * royalty) / 100;
-        if (loan >= roayltyFund) {
-            donations[_tokenId] += (roayltyFund * 100) / royalty;
-            userFunds[_owner] += roayltyFund;
-            roayltyFund = 0;
+        if (loan >= royaltyFund) {
+            donations[_tokenId] += (royaltyFund * 100) / royalty;
+            userFunds[_owner] += royaltyFund;
+            royaltyFund = 0;
         } else {
-            roayltyFund -= loan;
+            royaltyFund -= loan;
             userFunds[_owner] += loan;
             donations[_tokenId] = donationLimit;
         }
 
-        userFunds[inventor] += roayltyFund;
+        userFunds[inventor] += royaltyFund;
         userFunds[_receiver] +=
             _price -
             (_price * (marketFee + royalty)) /
             10000;
     }
 
+    // offer NFT with id "_id" for "_price"
     function makeOffer(uint256 _id, uint256 _price) public {
         nftCollection.transferFrom(msg.sender, address(this), _id);
         offerCount++;
@@ -85,9 +83,9 @@ contract NFTMarketplace {
             false,
             false
         );
-        
     }
 
+    // complete offer with id "_offerId"
     function fillOffer(uint256 _offerId) public payable {
         _Offer storage _offer = offers[_offerId];
         require(_offer.offerId == _offerId, "The offer must exist");
@@ -106,9 +104,9 @@ contract NFTMarketplace {
         _offer.fulfilled = true;
         _marketTransfer(_offer.price, _offer.id, _offer.user);
         userFunds[msg.sender] -= _offer.price - msg.value;
-       
     }
 
+    // cancel offer with id "_offerId"
     function cancelOffer(uint256 _offerId) public {
         _Offer storage _offer = offers[_offerId];
         require(_offer.offerId == _offerId, "The offer must exist");
@@ -126,9 +124,9 @@ contract NFTMarketplace {
         );
         nftCollection.transferFrom(address(this), msg.sender, _offer.id);
         _offer.cancelled = true;
-       
     }
 
+    // update offer with id "_offerId" with price "_price"
     function updateOffer(uint256 _offerId, uint256 _price) public {
         _Offer storage _offer = offers[_offerId];
         require(_offer.offerId == _offerId, "The offer must exist");
@@ -142,9 +140,9 @@ contract NFTMarketplace {
         );
 
         _offer.price = _price;
-      
     }
 
+    // return all auctions along with their token IDs
     function getAuctions()
         external
         view
@@ -160,20 +158,19 @@ contract NFTMarketplace {
         return (result, tokenIds);
     }
 
+    // create a new auction
     function makeAuction(
         uint256 _tokenId,
         uint256 _price,
         uint256 period
     ) public {
         nftCollection.transferFrom(msg.sender, address(this), _tokenId);
-
         nftAuctions[_tokenId].buyNowPrice = _price;
         nftAuctions[_tokenId].auctionEnd = block.timestamp + period * 1 hours;
         nftAuctions[_tokenId].nftSeller = msg.sender;
-
-     
     }
 
+    // calcle auction with token id "_tokenId"
     function cancelAuction(uint256 _tokenId) public {
         require(
             nftAuctions[_tokenId].nftSeller == msg.sender,
@@ -189,10 +186,9 @@ contract NFTMarketplace {
         nftAuctions[_tokenId].buyNowPrice = 0;
         nftAuctions[_tokenId].auctionEnd = 0;
         nftAuctions[_tokenId].nftSeller = address(0);
-
-       
     }
 
+    // transfer NFT and reset auction
     function settleAuction(uint256 _tokenId) public {
         require(
             nftAuctions[_tokenId].nftSeller != address(0),
@@ -202,8 +198,6 @@ contract NFTMarketplace {
             nftAuctions[_tokenId].auctionEnd <= block.timestamp,
             "Auction should be ended"
         );
-
-       
 
         if (nftAuctions[_tokenId].nftHighestBidder != address(0)) {
             _marketTransfer(
@@ -222,6 +216,7 @@ contract NFTMarketplace {
         nftAuctions[_tokenId].nftHighestBidder = address(0);
     }
 
+    // bid for token with id "_tokenId"
     function makeBid(uint256 _tokenId) public payable {
         require(
             nftAuctions[_tokenId].nftSeller != address(0),
@@ -261,10 +256,9 @@ contract NFTMarketplace {
         nftAuctions[_tokenId].nftHighestBid = msg.value;
         if (nftAuctions[_tokenId].auctionEnd < block.timestamp + 10 minutes)
             nftAuctions[_tokenId].auctionEnd = block.timestamp + 10 minutes;
-
-       
     }
 
+    // cancel bid with token id "_tokenId"
     function cancelBid(uint256 _tokenId) public {
         require(
             nftAuctions[_tokenId].nftSeller != address(0),
@@ -285,25 +279,26 @@ contract NFTMarketplace {
             10;
         nftAuctions[_tokenId].nftHighestBidder = address(0);
         nftAuctions[_tokenId].nftHighestBid = 0;
-
-      
     }
 
+    // claim all users funds
     function claimFunds() public {
         require(
             userFunds[msg.sender] > 0,
             "This user has no funds to be claimed"
         );
         payable(msg.sender).transfer(userFunds[msg.sender]);
-        
+
         userFunds[msg.sender] = 0;
     }
 
+    // transfer contract ownership
     function transferOwnership(address newOwner) public onlyOwner {
         require(newOwner != address(0));
         _owner = newOwner;
     }
 
+    // update market fee
     function updateMarketFee(uint256 _fee) public onlyOwner {
         require(
             _fee >= 0 && _fee <= 1000,
@@ -312,6 +307,7 @@ contract NFTMarketplace {
         marketFee = _fee;
     }
 
+    // update the donation limit of contract
     function updateDonationLimit(uint256 _fee) public onlyOwner {
         require(
             _fee >= 0 && _fee <= 0.01 ether,
