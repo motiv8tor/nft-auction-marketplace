@@ -3,13 +3,19 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract NFTCollection is ERC721, ERC721Enumerable {
-    string[] public tokenURIs;
-    mapping(string => bool) _tokenURIExists;
-    mapping(uint256 => string) _tokenIdToTokenURI;
-    mapping(uint256 => uint256) _tokenIdToTokenRoyalty;
-    mapping(uint256 => address) _tokenIdToTokenInventor;
+    using Counters for Counters.Counter;
+
+    Counters.Counter private _tokenIdCounter;
+    mapping(string => bool) private _tokenURIExists;
+
+    struct Record {
+        uint256 royalty;
+        address inventor;
+    }
+    mapping(uint256 => Record) records;
 
     constructor() ERC721("Art Collection", "Art") {}
 
@@ -40,29 +46,30 @@ contract NFTCollection is ERC721, ERC721Enumerable {
             _exists(tokenId),
             "ERC721Metadata: URI query for nonexistent token"
         );
-        return _tokenIdToTokenURI[tokenId];
+        return super.tokenURI(tokenId);
     }
 
     function safeMint(string memory _tokenURI, uint256 _royalty) public {
+        require(bytes(_tokenURI).length > 0, "Invalid URI");
         require(!_tokenURIExists[_tokenURI], "The token URI should be unique");
         require(
-            _royalty <= 1000 && _royalty >= 0,
+            _royalty <= 10 && _royalty >= 1,
             "Royalty can not exceed 10% or negative"
         );
-        tokenURIs.push(_tokenURI);
-        uint256 _id = tokenURIs.length;
-        _tokenIdToTokenURI[_id] = _tokenURI;
-        _tokenIdToTokenRoyalty[_id] = _royalty;
-        _tokenIdToTokenInventor[_id] = msg.sender;
+        uint256 _id = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+        records[_id] = Record(_royalty, msg.sender);
         _safeMint(msg.sender, _id);
         _tokenURIExists[_tokenURI] = true;
     }
 
-    function royalty(uint256 tokenId) external view returns (uint256) {
-        return _tokenIdToTokenRoyalty[tokenId];
+    function getRecord(uint256 tokenId) public view returns (uint256, address) {
+        require(_exists(tokenId), "Query of non existent Record");
+        Record memory record = records[tokenId];
+        return (record.royalty, record.inventor);
     }
 
-    function inventor(uint256 tokenId) external view returns (address) {
-        return _tokenIdToTokenInventor[tokenId];
+    function exist(uint256 tokenId) public view returns (bool) {
+        return _exists(tokenId);
     }
 }
