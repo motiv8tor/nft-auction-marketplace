@@ -277,27 +277,27 @@ contract NFTMarketplace is Ownable {
         emit Bid(_tokenId, msg.sender, nftAuctions[_tokenId].nftHighestBid);
     }
 
-    function cancelBid(uint256 _tokenId) public {
-        require(
-            nftAuctions[_tokenId].nftSeller != address(0),
-            "The auction must exist"
-        );
-        require(
-            nftAuctions[_tokenId].auctionEnd > block.timestamp,
-            "Auction has ended"
-        );
-        require(
-            msg.sender == nftAuctions[_tokenId].nftHighestBidder,
-            "Only highest bidder can cancel the bid"
-        );
+    // function cancelBid(uint256 _tokenId) public {
+    //     require(
+    //         nftAuctions[_tokenId].nftSeller != address(0),
+    //         "The auction must exist"
+    //     );
+    //     require(
+    //         nftAuctions[_tokenId].auctionEnd > block.timestamp,
+    //         "Auction has ended"
+    //     );
+    //     require(
+    //         msg.sender == nftAuctions[_tokenId].nftHighestBidder,
+    //         "Only highest bidder can cancel the bid"
+    //     );
 
-        userFunds[msg.sender] =
-            nftAuctions[_tokenId].nftHighestBid -
-            nftAuctions[_tokenId].nftHighestBid /
-            10;
-        nftAuctions[_tokenId].nftHighestBidder = address(0);
-        nftAuctions[_tokenId].nftHighestBid = 0;
-    }
+    //     userFunds[msg.sender] =
+    //         nftAuctions[_tokenId].nftHighestBid -
+    //         nftAuctions[_tokenId].nftHighestBid /
+    //         10;
+    //     nftAuctions[_tokenId].nftHighestBidder = address(0);
+    //     nftAuctions[_tokenId].nftHighestBid = 0;
+    // }
 
     function claimFunds() public {
         require(
